@@ -1,4 +1,23 @@
 options:
+  install_sources:
+    type: string
+    default: "deb https://repo.infinidat.com/packages/main-stable/apt/linux-ubuntu {distrib_codename} main"
+    description: |
+      Optional configuration to support use of additional sources such as:
+        - ppa:myteam/ppa
+        - cloud:trusty-proposed/kilo
+        - http://my.archive.com/ubuntu main
+      The last option should be used in conjunction with the key configuration
+      option. See https://repo.infinidat.com/home/main-stable for details.
+      The charm also supports templating of the distribution codename via 
+      automatic expansion of {distrib_codename} depending on the host system
+      version.
+  install_keys:
+    type: string
+    default:
+    description: |
+      Key ID to import to the apt keyring to support use with arbitary source
+      configuration from outside of Launchpad archives or PPA's. 
   use-multipath:
     type: boolean
     default: True
@@ -8,9 +27,9 @@ options:
       "use-multipath" option in the nova-compute charm.
   protocol:
     type: string
-    default:
+    default: iscsi
     description: |
-      SAN protocol to use. Choose between iscsi or fc.
+      SAN protocol to use. Choose between "iscsi" or "fc".
   volume-backend-name:
     type: string
     description: |
@@ -20,3 +39,64 @@ options:
         A common backend name can be set to multiple backends with the
         same characters so that those can be treated as a single virtual
         backend associated with a single volume type.
+  infinibox-ip:
+    type: string
+    description: |
+        Management VIP address of the Infinibox.
+    default: !!null
+  infinibox-login:
+    type: string
+    description: |
+        The username for management api on the Infinibox.
+    default: !!null
+  infinibox-password:
+    type: string
+    description: |
+        The password for management api on the Infinibox.
+    default: !!null
+  iscsi-netspaces:
+    type: string
+    description: Comma seperated list of iSCSI netspaces to use.
+    default: !!null ""
+  use-chap:
+    type: boolean
+    description: |
+        Choose whether to use CHAP authentication for iSCSI.
+    default: !!bool "false"
+  chap-username:
+    type: string
+    description: |
+        Username for CHAP authentication.
+    default: !!null ""
+  chap-password:
+    type: string
+    description: |
+        Password for CHAP authentication.
+    default: !!null ""
+  pool-name:
+    type: string
+    description: |
+        Storage pool on the Infinibox from which Cinder allocates volumes.
+        The pool must exist, otherwise Cinder would fail.
+    default: !!null ""
+  use-compression:
+    type: boolean
+    description: |
+        Choose whether to use compression on volumes.
+        Volume compression is available on InfiniBox 3.0 onward.
+    default: !!bool "true"
+  thin-provision:
+    type: boolean
+    description: |
+        Choose whether to allocate thin provisioned volumes.
+    default: !!bool "true"
+  infinibox-use-ssl:
+    type: boolean
+    description: |
+        Specifies whether to use SSL for Cinder to Infinibox network communication.
+    default: !!bool "true"
+  infinibox-ssl-ca:
+    type: string
+    description: |
+        Optional CA certificate used to verify Infinibox API certificate.
+    default: !!null

@@ -4,5 +4,5 @@
       - charm-unit-jobs-py39
     vars:
       needs_charm_build: true
-      charm_build_name: infinidat
+      charm_build_name: cinder-infinidat
       build_type: charmcraft
