@@ -1,9 +1,33 @@
 charm_name: cinder-infinidat
+target_deploy_status:
+  vault:
+    workload-status: blocked
+    workload-status-message-prefix: Vault needs to be initialized
+  ovn-chassis:
+    workload-status: waiting
+    workload-status-message-prefix: "'certificates' awaiting server certificate data"
+  ovn-central:
+    workload-status: waiting
+    workload-status-message-prefix: "'ovsdb-peer' incomplete, 'certificates' awaiting server certificate data"
+  neutron-api-plugin-ovn:
+    workload-status: waiting
+    workload-status-message-prefix: "'certificates' awaiting server certificate data, 'ovsdb-cms' incomplete"
+  ntp:
+    workload-status-message-prefix: "chrony: Ready"
 tests:
+  - tests.tests.CinderInfinidatBackendTest
   - tests.tests.CinderInfinidatTest
 configure:
-  - zaza.openstack.charm_tests.keystone.setup.add_demo_user
+  - zaza.openstack.charm_tests.vault.setup.auto_initialize_no_validation
+  - zaza.openstack.charm_tests.keystone.setup.wait_for_cacert
+# Needed for volume attachment tests
+  - zaza.openstack.charm_tests.glance.setup.add_lts_image
+  - zaza.openstack.charm_tests.nova.setup.create_flavors
+  - zaza.openstack.charm_tests.neutron.setup.basic_overcloud_network
+  - zaza.openstack.charm_tests.nova.setup.manage_ssh_key
+  - tests.tests.configure_default_volume_type
 gate_bundles:
   - focal-ussuri
 smoke_bundles:
   - focal-ussuri
+

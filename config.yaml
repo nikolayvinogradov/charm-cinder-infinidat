@@ -3,7 +3,8 @@ options:
     type: string
     default: "deb https://repo.infinidat.com/packages/main-stable/apt/linux-ubuntu {distrib_codename} main"
     description: |
-      Optional configuration to support use of additional sources such as:
+      The APT repository with Infinidat tools. The following formats are supported
+        - deb http://my.archive.com/ubuntu {distrib_codename} main
         - ppa:myteam/ppa
         - cloud:trusty-proposed/kilo
         - http://my.archive.com/ubuntu main
