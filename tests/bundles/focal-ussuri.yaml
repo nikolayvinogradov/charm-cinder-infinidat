@@ -18,6 +18,26 @@ variables:
   ovn-channel: &ovn-channel latest/stable
   openstack-channel: &openstack-channel ussuri/edge
   mysql-channel: &mysql-channel 8.0/stable
+  repo-infinidat-apt-key: &repo-infinidat-apt-key |
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    Version: GnuPG v1.4.11 (GNU/Linux)
+
+    mQENBFESDRIBCADMR7MQMbH4GdCQqfrOMt35MhBwwH4wv9kb1WRSTxa0CmuzYaBB
+    1nJ0nLaMAwHsEr9CytPWDpMngm/3nt+4F2hJcsOEkQkqeJ31gScJewM+AOUV3DEl
+    qOeXXYLcP+jUY6pPjlZpOw0p7moUQPXHn+7amVrk7cXGQ8O3B+5a5wjN86LT2hlX
+    DlBlV5bX/DYluiPUbvQLOknmwO53KpaeDeZc4a8iIOCYWu2ntuAMddBkTps0El5n
+    JJZMTf6os2ZzngWMZRMDiVJgqVRi2b+8SgFQlQy0cAmne/mpgPrRq0ZMX3DokGG5
+    hnIg1mF82laTxd+9qtiOxupzJqf8mncQHdaTABEBAAG0IWFwcF9yZXBvIChDb21t
+    ZW50KSA8bm9AZW1haWwuY29tPokBOAQTAQIAIgUCURINEgIbLwYLCQgHAwIGFQgC
+    CQoLBBYCAwECHgECF4AACgkQem2D/j05RYSrcggAsCc4KppV/SZX5XI/CWFXIAXw
+    +HaNsh2EwYKf9DhtoGbTOuwePvrPGcgFYM3Tu+m+rziPnnFl0bs0xwQyNEVQ9yDw
+    t465pSgmXwEHbBkoISV1e4WYtZAsnTNne9ieJ49Ob/WY4w3AkdPRK/41UP5Ct6lR
+    HHRXrSWJYHVq5Rh6BakRuMJyJLz/KvcJAaPkA4U6VrPD7PFtSecMTaONPjGCcomq
+    b7q84G5ZfeJWb742PWBTS8fJdC+Jd4y5fFdJS9fQwIo52Ff9In2QBpJt5Wdc02SI
+    fvQnuh37D2P8OcIfMxMfoFXpAMWjrMYc5veyQY1GXD/EOkfjjLne6qWPLfNojA==
+    =w5Os
+    -----END PGP PUBLIC KEY BLOCK-----
+
 machines:
   '0':
     constraints: tags=os-nodes
@@ -61,24 +81,8 @@ relations:
   - keystone:identity-service
 - - cinder:cinder-volume-service
   - nova-cloud-controller:cinder-volume-service
-- - cinder-ceph:storage-backend
-  - cinder:storage-backend
-- - ceph-mon:client
-  - nova-compute:ceph
-- - nova-compute:ceph-access
-  - cinder-ceph:ceph-access
-- - ceph-mon:client
-  - cinder-ceph:ceph
-- - ceph-mon:client
-  - glance:ceph
-- - ceph-osd:mon
-  - ceph-mon:osd
 - - ntp:juju-info
   - nova-compute:juju-info
-- - ceph-radosgw:mon
-  - ceph-mon:radosgw
-- - ceph-radosgw:identity-service
-  - keystone:identity-service
 - - placement:identity-service
   - keystone:identity-service
 - - placement:placement
@@ -144,73 +148,15 @@ relations:
 - - vault:certificates
   - placement:certificates
 - - vault:certificates
-  - ceph-radosgw:certificates
-- - vault:certificates
   - mysql-innodb-cluster:certificates
-- - cinder
-  - advanced-routing
-- - keystone
-  - advanced-routing
 - - nova-compute
-  - advanced-routing
-- - glance
-  - advanced-routing
+  - infinidat-tools
 - - cinder
   - cinder-infinidat
 - - cinder
   - infinidat-tools
-- - nova-compute
-  - infinidat-tools
 
 applications:
-  advanced-routing:
-    charm: advanced-routing
-    options:
-      enable-advanced-routing: true
-      advanced-routing-config: |
-        [
-          {
-            "type": "route",
-            "net": "10.246.152.0/24",
-            "gateway": "172.27.104.95"
-          },
-          {
-            "type": "route",
-            "net": "10.246.156.0/24",
-            "gateway": "172.27.104.95"
-          }
-        ]
-  ceph-mon:
-    charm: ceph-mon
-    channel: octopus/edge
-    num_units: 3
-    options:
-      expected-osd-count: *expected-osd-count
-      monitor-count: *expected-mon-count
-      source: *openstack-origin
-    to:
-    - 'lxd:0'
-    - 'lxd:1'
-    - 'lxd:2'
-  ceph-osd:
-    charm: ceph-osd
-    channel: octopus/edge
-    num_units: 3
-    options:
-      osd-devices: *osd-devices
-      source: *openstack-origin
-    to:
-    - '0'
-    - '1'
-    - '2'
-  ceph-radosgw:
-    charm: ceph-radosgw
-    channel: octopus/edge
-    num_units: 1
-    options:
-      source: *openstack-origin
-    to:
-    - 'lxd:3'
   cinder-mysql-router:
     charm: mysql-router
     channel: latest/edge
@@ -225,10 +171,6 @@ applications:
       openstack-origin: *openstack-origin
     to:
     - '3' # cinder can't be deployed to LXD, if iscsi is used
-  cinder-ceph:
-    charm: cinder-ceph
-    channel: *openstack-channel
-    num_units: 0
   glance-mysql-router:
     charm: mysql-router
     channel: latest/edge
@@ -374,53 +316,15 @@ applications:
     num_units: 1
     to:
     - 'lxd:2'
-
   infinidat-tools:
     expose: True
     charm: ../../infinidat-tools.charm
     options:
-      install_keys: |
-        -----BEGIN PGP PUBLIC KEY BLOCK-----
-        Version: GnuPG v1.4.11 (GNU/Linux)
-  
-        mQENBFESDRIBCADMR7MQMbH4GdCQqfrOMt35MhBwwH4wv9kb1WRSTxa0CmuzYaBB
-        1nJ0nLaMAwHsEr9CytPWDpMngm/3nt+4F2hJcsOEkQkqeJ31gScJewM+AOUV3DEl
-        qOeXXYLcP+jUY6pPjlZpOw0p7moUQPXHn+7amVrk7cXGQ8O3B+5a5wjN86LT2hlX
-        DlBlV5bX/DYluiPUbvQLOknmwO53KpaeDeZc4a8iIOCYWu2ntuAMddBkTps0El5n
-        JJZMTf6os2ZzngWMZRMDiVJgqVRi2b+8SgFQlQy0cAmne/mpgPrRq0ZMX3DokGG5
-        hnIg1mF82laTxd+9qtiOxupzJqf8mncQHdaTABEBAAG0IWFwcF9yZXBvIChDb21t
-        ZW50KSA8bm9AZW1haWwuY29tPokBOAQTAQIAIgUCURINEgIbLwYLCQgHAwIGFQgC
-        CQoLBBYCAwECHgECF4AACgkQem2D/j05RYSrcggAsCc4KppV/SZX5XI/CWFXIAXw
-        +HaNsh2EwYKf9DhtoGbTOuwePvrPGcgFYM3Tu+m+rziPnnFl0bs0xwQyNEVQ9yDw
-        t465pSgmXwEHbBkoISV1e4WYtZAsnTNne9ieJ49Ob/WY4w3AkdPRK/41UP5Ct6lR
-        HHRXrSWJYHVq5Rh6BakRuMJyJLz/KvcJAaPkA4U6VrPD7PFtSecMTaONPjGCcomq
-        b7q84G5ZfeJWb742PWBTS8fJdC+Jd4y5fFdJS9fQwIo52Ff9In2QBpJt5Wdc02SI
-        fvQnuh37D2P8OcIfMxMfoFXpAMWjrMYc5veyQY1GXD/EOkfjjLne6qWPLfNojA==
-        =w5Os
-        -----END PGP PUBLIC KEY BLOCK-----
-
+      install_keys: *repo-infinidat-apt-key
   cinder-infinidat:
     expose: True
     charm: ../../cinder-infinidat.charm
     options:
-      install_keys: |
-        -----BEGIN PGP PUBLIC KEY BLOCK-----
-        Version: GnuPG v1.4.11 (GNU/Linux)
-  
-        mQENBFESDRIBCADMR7MQMbH4GdCQqfrOMt35MhBwwH4wv9kb1WRSTxa0CmuzYaBB
-        1nJ0nLaMAwHsEr9CytPWDpMngm/3nt+4F2hJcsOEkQkqeJ31gScJewM+AOUV3DEl
-        qOeXXYLcP+jUY6pPjlZpOw0p7moUQPXHn+7amVrk7cXGQ8O3B+5a5wjN86LT2hlX
-        DlBlV5bX/DYluiPUbvQLOknmwO53KpaeDeZc4a8iIOCYWu2ntuAMddBkTps0El5n
-        JJZMTf6os2ZzngWMZRMDiVJgqVRi2b+8SgFQlQy0cAmne/mpgPrRq0ZMX3DokGG5
-        hnIg1mF82laTxd+9qtiOxupzJqf8mncQHdaTABEBAAG0IWFwcF9yZXBvIChDb21t
-        ZW50KSA8bm9AZW1haWwuY29tPokBOAQTAQIAIgUCURINEgIbLwYLCQgHAwIGFQgC
-        CQoLBBYCAwECHgECF4AACgkQem2D/j05RYSrcggAsCc4KppV/SZX5XI/CWFXIAXw
-        +HaNsh2EwYKf9DhtoGbTOuwePvrPGcgFYM3Tu+m+rziPnnFl0bs0xwQyNEVQ9yDw
-        t465pSgmXwEHbBkoISV1e4WYtZAsnTNne9ieJ49Ob/WY4w3AkdPRK/41UP5Ct6lR
-        HHRXrSWJYHVq5Rh6BakRuMJyJLz/KvcJAaPkA4U6VrPD7PFtSecMTaONPjGCcomq
-        b7q84G5ZfeJWb742PWBTS8fJdC+Jd4y5fFdJS9fQwIo52Ff9In2QBpJt5Wdc02SI
-        fvQnuh37D2P8OcIfMxMfoFXpAMWjrMYc5veyQY1GXD/EOkfjjLne6qWPLfNojA==
-        =w5Os
-        -----END PGP PUBLIC KEY BLOCK-----
+      install_keys: *repo-infinidat-apt-key
       iscsi-netspaces: iscsi
       pool-name: cinder

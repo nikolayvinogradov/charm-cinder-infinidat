@@ -1,0 +1,10 @@
+applications:
+  cinder-infinidat:
+    options:
+      infinibox-ip: "{{ OS_INFINIBOX_IP }}"
+      infinibox-login: "{{ OS_INFINIBOX_LOGIN }}"
+      infinibox-password: "{{ OS_INFINIBOX_PASSWORD }}"
+      # Name of the network space of type iscsi on the Infinibox
+      iscsi-netspaces: "{{ OS_INFINIBOX_ISCSI_NETSPACE | default('iscsi') }}"
+      pool-name: "{{ OS_INFINIBOX_POOL_NAME | default('cinder') }}"
+
